@@ -1,0 +1,12 @@
+apply plugin: 'maven-publish'
+
+publishing {
+    publications {
+        qrOpenCVAar(MavenPublication) {
+          groupId "org.opencv"
+          version "4.5.4"
+          artifactId "qr-opencv"
+          artifact("build/outputs/aar/qr-opencv-release.aar")
+        }
+    }
+}
