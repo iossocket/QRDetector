@@ -29,6 +29,11 @@ class QrDetectorViewManager: RCTViewManager {
     }
 }
 
+struct QRElement {
+    let stringValue: String
+    let bounds: CGRect?
+}
+
 class QrDetectorView : UIView {
     
     var captureSession: AVCaptureSession = AVCaptureSession()
@@ -44,8 +49,9 @@ class QrDetectorView : UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         
-        let captureDevice = AVCaptureDevice.default(for: .video)!
-        let input = try! AVCaptureDeviceInput(device: captureDevice)
+        guard let captureDevice = AVCaptureDevice.default(for: .video), let input = try? AVCaptureDeviceInput(device: captureDevice) else {
+            return
+        }
         captureSession.addInput(input)
         
         let captureMetadataOutput = AVCaptureMetadataOutput()
@@ -69,6 +75,12 @@ class QrDetectorView : UIView {
 
 extension QrDetectorView: AVCaptureMetadataOutputObjectsDelegate {
     func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
-        print("metadataObjects: \(metadataObjects)")
+        var result: [QRElement] = []
+        for obj in metadataObjects {
+            if let readable = obj as? AVMetadataMachineReadableCodeObject, let str = readable.stringValue {
+                result.append(QRElement(stringValue: str, bounds: readable.bounds))
+            }
+        }
+        print("metadataObjects: \(result)")
     }
 }
