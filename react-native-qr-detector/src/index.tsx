@@ -12,7 +12,6 @@ const LINKING_ERROR =
   '- You are not using Expo managed workflow\n';
 
 type QrDetectorProps = {
-  color: string;
   style: ViewStyle;
 };
 
@@ -24,3 +23,4 @@ export const QrDetectorView =
     : () => {
         throw new Error(LINKING_ERROR);
       };
+// export const QrDetectorViewManager =

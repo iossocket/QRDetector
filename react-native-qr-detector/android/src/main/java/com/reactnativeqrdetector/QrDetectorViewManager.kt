@@ -6,11 +6,17 @@ import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.annotations.ReactProp
 
+import android.view.LayoutInflater
+import com.camerakit.CameraKitView
+
 class QrDetectorViewManager : SimpleViewManager<View>() {
   override fun getName() = "QrDetectorView"
+  private var cameraKitView: CameraKitView? = null
 
   override fun createViewInstance(reactContext: ThemedReactContext): View {
-    return View(reactContext)
+    val content: View = LayoutInflater.from(reactContext).inflate(R.layout.camera, null)
+    this.cameraKitView = content.findViewById<CameraKitView>(R.id.camera)
+    return content
   }
 
   @ReactProp(name = "color")

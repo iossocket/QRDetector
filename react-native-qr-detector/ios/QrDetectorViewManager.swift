@@ -1,32 +1,74 @@
+import AVFoundation
+
+
 @objc(QrDetectorViewManager)
 class QrDetectorViewManager: RCTViewManager {
 
-  override func view() -> (QrDetectorView) {
-    return QrDetectorView()
-  }
+    override func view() -> (QrDetectorView) {
+        return QrDetectorView()
+    }
+    
+    override var methodQueue: DispatchQueue! {
+        return DispatchQueue.main
+    }
+    
+    override class func requiresMainQueueSetup() -> Bool {
+        return true
+    }
+    
+    @objc final func getCameraPermissionStatus(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        resolve(status.rawValue)
+    }
+    
+    @objc final func requestCameraPermission(_ resolve: @escaping RCTPromiseResolveBlock, reject _: @escaping RCTPromiseRejectBlock) {
+        AVCaptureDevice.requestAccess(for: .video) { granted in
+            let result: AVAuthorizationStatus = granted ? .authorized : .denied
+            resolve(result.rawValue)
+        }
+    }
 }
 
 class QrDetectorView : UIView {
-
-  @objc var color: String = "" {
-    didSet {
-      self.backgroundColor = hexStringToUIColor(hexColor: color)
+    
+    var captureSession: AVCaptureSession = AVCaptureSession()
+    
+    var videoPreviewLayer: AVCaptureVideoPreviewLayer {
+        return layer as! AVCaptureVideoPreviewLayer
     }
-  }
-
-  func hexStringToUIColor(hexColor: String) -> UIColor {
-    let stringScanner = Scanner(string: hexColor)
-
-    if(hexColor.hasPrefix("#")) {
-      stringScanner.scanLocation = 1
+    
+    override public class var layerClass: AnyClass {
+        return AVCaptureVideoPreviewLayer.self
     }
-    var color: UInt32 = 0
-    stringScanner.scanHexInt32(&color)
 
-    let r = CGFloat(Int(color >> 16) & 0x000000FF)
-    let g = CGFloat(Int(color >> 8) & 0x000000FF)
-    let b = CGFloat(Int(color) & 0x000000FF)
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        
+        let captureDevice = AVCaptureDevice.default(for: .video)!
+        let input = try! AVCaptureDeviceInput(device: captureDevice)
+        captureSession.addInput(input)
+        
+        let captureMetadataOutput = AVCaptureMetadataOutput()
+        captureSession.addOutput(captureMetadataOutput)
+        
+        captureMetadataOutput.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
+        captureMetadataOutput.metadataObjectTypes = [AVMetadataObject.ObjectType.qr]
+        
+        videoPreviewLayer.session = captureSession
+        videoPreviewLayer.videoGravity = .resizeAspectFill
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func didSetProps(_ changedProps: [String]!) {
+        captureSession.startRunning()
+    }
+}
 
-    return UIColor(red: r / 255.0, green: g / 255.0, blue: b / 255.0, alpha: 1)
-  }
+extension QrDetectorView: AVCaptureMetadataOutputObjectsDelegate {
+    func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
+        print("metadataObjects: \(metadataObjects)")
+    }
 }
